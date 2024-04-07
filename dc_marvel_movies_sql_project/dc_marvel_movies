@@ -1,0 +1,243 @@
+SELECT * FROM dc_marvel_movies;
+
+-- ALTER TABLE dc_marvel_movies  
+-- RENAME COLUMN ï»¿Film to Film;
+
+
+-- 1. List all DC superhero movies with their U.S. release dates and worldwide box office gross.
+
+SELECT 
+   Film, US_release_date, CONCAT('$', FORMAT(Box_office_gross_Worldwide, 'No')) AS Box_office_gross_Worldwide
+FROM 
+   dc_marvel_movies
+WHERE Franchise = 'DC'
+ORDER BY CAST(Box_office_gross_Worldwide AS DECIMAL(18,2)) DESC;
+
+-- 2. Calculate the total box office gross worldwide for all Marvel movies.
+
+SELECT 
+   film, 
+   CONCAT('$', FORMAT(SUM(Box_office_gross_Worldwide), 'No')) AS gross_worldwide_box_office
+FROM 
+   dc_marvel_movies
+WHERE Franchise = 'Marvel'
+GROUP BY film
+ORDER BY SUM(Box_office_gross_Worldwide) DESC;
+
+-- 3. Find the average length of DC superhero movies.
+
+SELECT 
+AVG(Minutes) AS avg_length_in_Minutes
+FROM 
+   dc_marvel_movies
+WHERE Franchise = 'DC';
+
+-- 4. Retrieve the top 5 highest-grossing DC movies in the U.S. and Canada.
+
+SELECT 
+    film, 
+    CONCAT('$', FORMAT(SUM(Box_office_gross_Domestic_US_and_Canada), 'No')) AS US_and_Canada_Box_office
+FROM dc_marvel_movies
+WHERE Franchise = 'DC'
+GROUP BY film
+ORDER BY  CAST(US_and_Canada_Box_office AS DECIMAL(18,2)) DESC LIMIT 5;
+
+-- 5. List all Marvel Phase 3 movies.
+
+SELECT 
+    Film
+FROM dc_marvel_movies
+WHERE Phase = 3; 
+
+-- 6. Find the movie with the highest budget among all superhero movies.
+
+SELECT 
+CONCAT('$', FORMAT(MAX(budget), 'No')) AS highest_budget_of_all_superhero_movies
+FROM 
+   dc_marvel_movies;
+
+-- 7. Calculate the percentage of domestic box office gross for each Marvel movie.
+
+SELECT 
+    Film, 
+    (SUM(Box_office_gross_Domestic_US_and_Canada) / SUM(Box_office_gross_Worldwide)) * 100 AS domestic_percentage
+FROM dc_marvel_movies
+WHERE Franchise = 'Marvel'
+GROUP BY film
+ORDER BY domestic_percentage DESC;
+
+-- 8. Find the movie with the highest Rotten Tomatoes critic score.
+
+SELECT film,
+    MAX(Rotten_Tomatoes_Critic_Score) AS highest_rotten_tomatoes_score
+FROM dc_marvel_movies
+GROUP BY film
+ORDER BY highest_rotten_tomatoes_score DESC LIMIT 1;
+
+-- 9. List all DC movies released after 2010.
+
+SELECT *
+FROM 
+   dc_marvel_movies
+WHERE Franchise = 'DC' and EXTRACT(YEAR FROM US_release_date) > 2010;
+
+-- 10. Find the average gross to budget ratio for Marvel Phase 2 movies.
+
+SELECT AVG(Box_office_gross_Domestic_US_and_Canada / budget) AS avg_ratio
+FROM dc_marvel_movies
+WHERE Phase = 2 and Budget > 0 AND Box_office_gross_Domestic_US_and_Canada > 0;
+
+-- 11. Retrieve the top 5 highest-grossing movies for each distributor.
+
+SELECT 
+    Distributor,
+    CONCAT('$', FORMAT(SUM(Box_office_gross_worldwide), 'N0')) AS highest_box_office_gross_worldwide
+FROM dc_marvel_movies
+GROUP BY Distributor
+ORDER BY SUM(Box_office_gross_worldwide) DESC;
+
+-- 12. List all movies with a budget higher than $200 million.   200,000,000
+
+SELECT *
+FROM dc_marvel_movies 
+WHERE Budget > 200000000;
+
+-- 13. Find the average length of movies in each MPAA rating category.
+
+SELECT 
+    MPAA_Rating ,
+    ROUND(AVG(length),2) AS avg_length
+FROM dc_marvel_movies
+GROUP BY MPAA_Rating
+ORDER BY avg_length DESC;
+
+-- 14. Calculate the total worldwide gross for each year.
+
+SELECT 
+    EXTRACT(YEAR FROM US_Release_date) AS movie_release_year, 
+    CONCAT('$',FORMAT(SUM(Box_office_gross_Worldwide), 'No')) AS worldwide_box_gross
+FROM dc_marvel_movies
+GROUP BY EXTRACT(YEAR FROM US_Release_date)
+ORDER BY SUM(Box_office_gross_Worldwide) DESC;
+
+-- 15. List all Marvel movies led by a female character.
+
+SELECT
+   Film AS marvel_movies_female_character
+FROM dc_marvel_movies
+WHERE Male_Female_led = 'Female' AND Franchise = 'Marvel';
+
+-- 16. Find the movie with the highest inflation-adjusted worldwide gross.
+
+SELECT
+   Film, CONCAT('$', FORMAT(MAX(Inflation_Adjusted_Worldwide_Gross), 0)) AS highest_inflation_adjusted
+FROM dc_marvel_movies
+GROUP BY Film
+ORDER BY MAX(Inflation_Adjusted_Worldwide_Gross) DESC LIMIT 1;
+
+-- 17. Retrieve the top 3 movies with the highest ROI (Return on Investment).
+
+SELECT
+    Film,
+    (Box_office_gross_Worldwide - budget) / budget AS ROI
+FROM dc_marvel_movies
+ORDER BY (Box_office_gross_Worldwide - budget) DESC;
+
+-- 18. List all Marvel Phase 1 movies with their budgets and lengths.
+
+SELECT
+    Film, CONCAT('$', FORMAT(budget, 'No')) AS movie_budget, length AS length_of_movies
+FROM dc_marvel_movies
+WHERE Phase = 1 AND Franchise = 'Marvel'
+ORDER BY movie_budget DESC, length_of_movies DESC;
+
+-- 19. Find the distribution of MPAA ratings for DC movies.
+
+SELECT 
+    Film,
+    MPAA_Rating
+FROM dc_marvel_movies
+WHERE Franchise = 'DC';
+
+-- 20. Calculate the average inflation-adjusted budget for DC Phase 2 movies.
+
+SELECT
+    Film,
+    CONCAT('$', FORMAT(ROUND(AVG(Inflation_Adjusted_Budget),2), 'No')) AS avg_inflation_adjusted_budget
+FROM dc_marvel_movies
+WHERE Franchise = 'DC' OR Phase = 2
+GROUP BY Film
+ORDER BY ROUND(AVG(Inflation_Adjusted_Budget),2) DESC;
+
+-- 21. Retrieve the oldest DC movie in the dataset.
+
+SELECT
+  Film, Year
+FROM dc_marvel_movies
+ORDER BY Year ASC LIMIT 1;
+
+-- 22. Find the movie with the highest box office gross in other territories.
+
+SELECT 
+   Film, YEAR, 
+   CONCAT('$', FORMAT(Box_office_gross_Other_territories, 'N0')) AS box_office_gross_other_terrotories
+FROM dc_marvel_movies
+ORDER BY Box_office_gross_Other_territories DESC 
+LIMIT 1;
+
+-- 23. Calculate the total box office gross for each franchise.
+
+SELECT 
+   Franchise,
+   CONCAT('$', FORMAT(SUM(Box_office_gross_Worldwide), 'No')) AS box_office_gross_worldwid
+FROM dc_marvel_movies
+GROUP BY Franchise
+ORDER BY SUM(Box_office_gross_Worldwide) DESC;
+
+-- 24. Retrieve the top 3 movies with the lowest Rotten Tomatoes critic scores.
+
+SELECT
+   Film, Rotten_Tomatoes_Critic_Score
+FROM dc_marvel_movies
+ORDER BY Rotten_Tomatoes_Critic_Score ASC LIMIT 3;
+
+-- 25. List all movies released before 2000.
+
+SELECT 
+   Film, Year
+FROM dc_marvel_movies
+WHERE Year <= 2000;
+
+-- 26. Find the average length of movies for each character family.
+
+SELECT
+   Character_Family,
+   ROUND(AVG(Minutes),2) AS avg_length_in_minutes
+FROM dc_marvel_movies
+GROUP BY Character_Family
+ORDER BY avg_length_in_minutes DESC;
+
+-- 27. Calculate the percentage of movies with a budget higher than $100 million.
+
+SELECT 
+    (COUNT(CASE 
+              WHEN budget > 100000000 THEN 1 END) / COUNT(*) * 100) AS movies_budget_greater_tahn_100_million
+FROM dc_marvel_movies;
+
+-- 28. Retrieve the top 3 highest-grossing movies with a PG-13 rating.
+
+SELECT
+   Film,
+   CONCAT('$', FORMAT(SUM(Box_office_gross_Worldwide), 'No')) AS highest_grossing_movies_pg_13
+FROM dc_marvel_movies
+WHERE MPAA_Rating = 'PG-13'
+GROUP BY Film
+ORDER BY SUM(Box_office_gross_Worldwide) DESC LIMIT 3;
+
+-- 29. List all movies with a break-even point less than 2.5x their budget.
+
+SELECT 
+   Film, CONCAT('$', FORMAT(Budget, 'No')) AS Budegt, CONCAT('$', FORMAT(`2.5x_prod`, 'No')) AS `2.5x_budget`
+FROM dc_marvel_movies
+WHERE Budget < `2.5x_prod`
+ORDER BY Budget DESC, `2.5x_prod` DESC;
