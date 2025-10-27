@@ -1,0 +1,177 @@
+-- # SET GLOBAL local_infile = 1;
+
+
+-- LOAD DATA LOCAL INFILE 'C:/Users/ADMIN/Downloads/funding.csv'
+-- INTO TABLE funding
+-- FIELDS TERMINATED BY ','
+-- ENCLOSED BY '"'
+-- LINES TERMINATED BY '\n'
+-- IGNORE 1 ROWS
+-- (company_id, valuation, funding, select_investors);
+
+
+SELECT * FROM companies;
+
+SELECT * FROM funding;
+
+SELECT * FROM industries;
+
+SELECT * FROM dates;
+
+-- 1- identify the three best-performing industries based on the number of new unicorns created over the last three years (2019, 2020, and 2021) combined.
+
+SELECT
+   i.industry,
+   COUNT(c.company_id) AS no_of_unicorns
+FROM companies c 
+JOIN industries i ON c.company_id = i.company_id
+JOIN dates d ON c.company_id = d.company_id
+WHERE YEAR(d.date_joined) IN (2019,2020,2021)
+GROUP BY i.industry
+ORDER BY no_of_unicorns DESC
+LIMIT 3;
+
+-- 2. Among all industries that produced unicorn companies between 2019 and 2021, which were the top 3 industries by number of unicorns, and 
+-- what was the average valuation (in billions) of those unicorns per year?
+
+WITH industries_count AS (
+    SELECT
+       i.industry,
+       COUNT(c.company_id) AS no_of_unicorns
+	FROM industries i 
+    JOIN companies c ON i.company_id = c.company_id
+    JOIN dates d ON i.company_id = d.company_id
+    WHERE YEAR(d.date_joined) IN ('2019','2020','2021')
+    GROUP BY i.industry
+),
+ranked_industries AS (
+    SELECT *,
+       DENSE_RANK() OVER(ORDER BY no_of_unicorns DESC) AS rnk
+	FROM industries_count
+)
+SELECT
+   i.industry,
+   YEAR(d.date_joined) AS years,
+   COUNT(c.company_id) AS no_of_unicorns,
+   ROUND(AVG(f.valuation) / 1000000000,2) AS avg_billion_valuations
+FROM companies c 
+JOIN industries i ON c.company_id = i.company_id
+JOIN funding f ON c.company_id = f.company_id
+JOIN dates d ON c.company_id = d.company_id
+JOIN ranked_industries ri ON i.industry = ri.industry
+WHERE YEAR(d.date_joined) IN ('2019','2020','2021')
+AND rnk <= 3
+GROUP BY i.industry, YEAR(d.date_joined);
+
+
+-- 3. Check unicorn companines over continent during the last three years (2019, 2020, and 2021) combined.
+
+SELECT
+  c.continent,
+  YEAR(d.date_joined) AS years,
+  COUNT(c.company_id) AS no_of_unicorns,
+  ROUND(AVG(f.valuation) / 100000000,2) AS avg_billion_valuations
+FROM companies c 
+JOIN funding f ON c.company_id = f.company_id
+JOIN dates d ON c.company_id = d.company_id
+WHERE YEAR(d.date_joined) IN ('2019','2020','2021')
+GROUP BY c.continent, YEAR(d.date_joined)
+ORDER BY no_of_unicorns DESC;
+
+-- 4. What is the first unicorn company ?
+
+SELECT 
+   c.company, c.continent, c.country,
+   i.industry, YEAR(d.date_joined), d.year_founded,
+   f.select_investors, f.valuation, f.funding
+FROM companies c 
+JOIN industries i ON c.company_id = i.company_id
+JOIN funding f ON c.company_id = f.company_id
+JOIN dates d ON c.company_id = d.company_id
+ORDER BY YEAR(d.date_joined) ASC
+LIMIT 1;
+
+-- 5. Check number of companies over years ?
+
+SELECT
+   YEAR(d.date_joined) AS years,
+   COUNT(c.company_id) AS no_of_companies,
+   ROUND(AVG(f.valuation) / 100000000,2) AS avg_billion_valuations
+FROM companies c 
+JOIN industries i ON c.company_id = i.company_id
+JOIN funding f ON c.company_id = f.company_id
+JOIN dates d ON c.company_id = d.company_id
+GROUP BY  YEAR(d.date_joined)
+ORDER BY no_of_companies DESC;
+
+-- 6. Get percentage of unicorn companies at 2021 to the total
+
+SELECT
+  ROUND((SELECT COUNT(d.company_id) FROM dates d WHERE YEAR(d.date_joined) = '2021') * 100 / COUNT(c.company_id),2) AS 2021_unicorn_percentage
+FROM companies c 
+JOIN dates d ON c.company_id = d.company_id;
+
+-- 7. Since about 50% of companines joined the club at 2021, lets check the industry category of these companies. 
+
+SELECT
+   i.industry,
+   COUNT(c.company_id) AS no_of_unicorns
+FROM companies c 
+JOIN industries i ON c.company_id = i.company_id
+JOIN dates d ON c.company_id = d.company_id
+WHERE YEAR(d.date_joined) = '2021'
+GROUP BY i.industry
+ORDER BY no_of_unicorns DESC;
+
+-- 8. How many years it take to join to unicorn club?
+
+SELECT * FROM companies;
+
+SELECT * FROM funding;
+
+SELECT * FROM industries;
+
+SELECT * FROM dates;
+
+SELECT
+  c.company_id, c.company, c.country, c.continent, i.industry, 
+  YEAR(d.date_joined) AS year_joined, d.year_founded,
+  # YEAR(d.date_joined) - d.year_founded AS no_of_years_taken_to_become_unicorn,
+  CASE 
+    WHEN (YEAR(d.date_joined) - d.year_founded) <= 2 THEN '0 to 2'
+    WHEN (YEAR(d.date_joined) - d.year_founded) > 2 AND (YEAR(d.date_joined) - d.year_founded) <= 5 THEN '2 to 5'
+    WHEN (YEAR(d.date_joined) - d.year_founded) > 5 AND (YEAR(d.date_joined) - d.year_founded) <= 10 THEN '5 to 10'
+    WHEN (YEAR(d.date_joined) - d.year_founded) > 10 AND (YEAR(d.date_joined) - d.year_founded) <= 15 THEN '10 to 15'
+    WHEN (YEAR(d.date_joined) - d.year_founded) > 15 AND (YEAR(d.date_joined) - d.year_founded) <= 20 THEN '15 to 20'
+    ELSE '25+'
+  END AS no_of_years_taken_to_become_unicorn
+FROM companies c 
+JOIN industries i ON c.company_id = i.company_id
+JOIN dates d ON c.company_id = d.company_id;
+
+-- 9. Get summary of number of companies in each bin group
+ 
+ WITH CTE AS (
+    SELECT
+    c.company_id, c.company, c.country, c.continent, i.industry, 
+    YEAR(d.date_joined) AS year_joined, d.year_founded,
+    # YEAR(d.date_joined) - d.year_founded AS no_of_years_taken_to_become_unicorn,
+  CASE 
+    WHEN (YEAR(d.date_joined) - d.year_founded) <= 2 THEN '0 to 2'
+    WHEN (YEAR(d.date_joined) - d.year_founded) > 2 AND (YEAR(d.date_joined) - d.year_founded) <= 5 THEN '2 to 5'
+    WHEN (YEAR(d.date_joined) - d.year_founded) > 5 AND (YEAR(d.date_joined) - d.year_founded) <= 10 THEN '5 to 10'
+    WHEN (YEAR(d.date_joined) - d.year_founded) > 10 AND (YEAR(d.date_joined) - d.year_founded) <= 15 THEN '10 to 15'
+    WHEN (YEAR(d.date_joined) - d.year_founded) > 15 AND (YEAR(d.date_joined) - d.year_founded) <= 20 THEN '15 to 20'
+    ELSE '25+'
+  END AS no_of_years_taken_to_become_unicorn
+FROM companies c 
+JOIN industries i ON c.company_id = i.company_id
+JOIN dates d ON c.company_id = d.company_id
+)
+SELECT
+   no_of_years_taken_to_become_unicorn,
+   COUNT(no_of_years_taken_to_become_unicorn) AS no_of_unicorn
+FROM CTE
+GROUP BY no_of_years_taken_to_become_unicorn;
+
+
