@@ -125,14 +125,6 @@ ORDER BY no_of_unicorns DESC;
 
 -- 8. How many years it take to join to unicorn club?
 
-SELECT * FROM companies;
-
-SELECT * FROM funding;
-
-SELECT * FROM industries;
-
-SELECT * FROM dates;
-
 SELECT
   c.company_id, c.company, c.country, c.continent, i.industry, 
   YEAR(d.date_joined) AS year_joined, d.year_founded,
